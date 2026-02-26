@@ -1,0 +1,5 @@
+{
+  "name": "PolyCrawl-Service-Copilot",
+  "description": "A robust, Go-based Command Line Interface that acts as a Model Context Protocol (MCP) server bridging IDEs, LLMs, and PolyCrawl infrastructure.",
+  "requestFramePermissions": []
+}
