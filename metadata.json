@@ -1,5 +1,5 @@
 {
-  "name": "PolyCrawl-Service-Copilot",
-  "description": "A robust, Go-based Command Line Interface that acts as a Model Context Protocol (MCP) server bridging IDEs, LLMs, and PolyCrawl infrastructure.",
+  "name": "Replit Templates Gallery",
+  "description": "A high-fidelity replica of the Replit Templates Gallery, featuring categorized development environments, search functionality, and persistent dark mode.",
   "requestFramePermissions": []
 }

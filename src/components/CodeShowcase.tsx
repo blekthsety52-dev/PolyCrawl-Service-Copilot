@@ -18,14 +18,14 @@ export const CodeShowcase = () => {
           <h3 className="text-4xl font-display font-bold">Type-Safe Infrastructure Control</h3>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {APP_CONTENT.codeSnippets.map((snippet, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="rounded-2xl overflow-hidden border border-white/10 bg-[#0d0d0d]"
+              className="rounded-2xl overflow-hidden border border-white/10 bg-[#0d0d0d] flex flex-col"
             >
               <div className="px-6 py-4 bg-white/5 border-b border-white/10 flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -36,7 +36,7 @@ export const CodeShowcase = () => {
                   <Copy size={14} className="text-white/40" />
                 </button>
               </div>
-              <div className="p-4 overflow-x-auto">
+              <div className="p-4 overflow-x-auto flex-grow">
                 <SyntaxHighlighter
                   language={snippet.language}
                   style={atomDark}
@@ -44,8 +44,8 @@ export const CodeShowcase = () => {
                     background: "transparent",
                     padding: 0,
                     margin: 0,
-                    fontSize: "13px",
-                    lineHeight: "1.6",
+                    fontSize: "12px",
+                    lineHeight: "1.5",
                   }}
                 >
                   {snippet.code}

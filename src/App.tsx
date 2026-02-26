@@ -1,46 +1,75 @@
 /**
  * @component App
- * @description Main application entry point composing the PolyCrawl-Service-Copilot landing page.
+ * @description Main application entry point for the Replit Templates Gallery replica.
  */
 
-import { Hero } from "./components/Hero";
-import { Features } from "./components/Features";
-import { Architecture } from "./components/Architecture";
-import { CodeShowcase } from "./components/CodeShowcase";
-import { Stack } from "./components/Stack";
-import { Footer } from "./components/Footer";
+import { useState } from "react";
+import { Sidebar } from "./components/Sidebar";
+import { Navbar } from "./components/Navbar";
+import { CategoryTabs } from "./components/CategoryTabs";
+import { TemplateCard } from "./components/TemplateCard";
+import { REPLIT_CONTENT } from "./constants/replit_content";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function App() {
+  const [activeCategory, setActiveCategory] = useState("all");
+
+  const filteredTemplates = activeCategory === "all" 
+    ? REPLIT_CONTENT.templates 
+    : REPLIT_CONTENT.templates.filter(t => t.category === activeCategory);
+
   return (
-    <div className="min-h-screen bg-brand-bg selection:bg-brand-accent selection:text-black">
-      <nav className="fixed top-0 left-0 w-full z-50 glass border-b border-white/5">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-brand-accent rounded flex items-center justify-center">
-              <span className="text-[10px] font-bold text-black">PC</span>
+    <div className="flex min-h-screen bg-replit-bg text-replit-text selection:bg-replit-accent selection:text-white">
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col min-w-0">
+        <Navbar />
+        
+        <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            <header className="mb-10">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">Templates</h1>
+              <p className="text-lg text-replit-text-dim max-w-2xl font-light">
+                Start your next project with a pre-configured environment. Choose from over 100+ languages and frameworks.
+              </p>
+            </header>
+
+            <CategoryTabs 
+              activeCategory={activeCategory} 
+              onCategoryChange={setActiveCategory} 
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <AnimatePresence mode="popLayout">
+                {filteredTemplates.map((template) => (
+                  <motion.div
+                    key={template.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <TemplateCard template={template} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
-            <span className="font-display font-bold tracking-tight">PolyCrawl</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-mono text-white/60">
-            <a href="#" className="hover:text-white transition-colors">Features</a>
-            <a href="#" className="hover:text-white transition-colors">Architecture</a>
-            <a href="#" className="hover:text-white transition-colors">Code</a>
-            <button className="px-4 py-1.5 bg-white text-black font-bold rounded hover:bg-brand-accent transition-colors">
-              Install
-            </button>
-          </div>
-        </div>
-      </nav>
 
-      <main>
-        <Hero />
-        <Features />
-        <Architecture />
-        <CodeShowcase />
-        <Stack />
-      </main>
-
-      <Footer />
+            {filteredTemplates.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-replit-text-dim">
+                <p className="text-lg font-medium">No templates found in this category.</p>
+                <button 
+                  onClick={() => setActiveCategory("all")}
+                  className="mt-4 text-replit-accent hover:underline"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -67,6 +67,57 @@ export const APP_CONTENT = {
       { label: "Idle Memory", value: "< 200MB" },
     ],
   },
+  mcpTools: {
+    title: "Standardized MCP Tools",
+    description: "Native Go implementations of Model Context Protocol tools, providing deep introspection into your infrastructure with type-safe execution.",
+    tools: [
+      {
+        name: "get_k8s_context",
+        description: "Programmatically retrieves active kubeconfig context, cluster endpoints, and namespace isolation details using client-go.",
+        icon: "Cloud"
+      },
+      {
+        name: "check_crawler_health",
+        description: "Queries pod status and restart counts for specialized crawler workers across namespaces.",
+        icon: "Activity"
+      }
+    ]
+  },
+  devTools: {
+    title: "Internal Dev Utilities",
+    description: "A comprehensive suite of Go-native instruments designed to accelerate the development lifecycle of the PolyCrawl ecosystem.",
+    modules: [
+      {
+        title: "Observability & Debugging",
+        description: "Structured logging with trace-id propagation and real-time debug snapshots of the MCP RPC loop.",
+        icon: "SearchCode"
+      },
+      {
+        title: "Performance Profiling",
+        description: "High-resolution latency tracking for tool execution and concurrent indexing memory pressure monitors.",
+        icon: "Gauge"
+      },
+      {
+        title: "AST Analysis Instruments",
+        description: "Tree-sitter based code scanners that enforce PolyCrawl-specific architectural constraints.",
+        icon: "Binary"
+      },
+      {
+        title: "Automation Engine",
+        description: "Go-native task runners for repository indexing, K8s mock injection, and protocol compliance testing.",
+        icon: "Wrench"
+      }
+    ]
+  },
+  configStrategy: {
+    title: "Dynamic Configuration",
+    description: "Utilizing Viper for multi-source configuration (YAML, Environment Variables, Flags) and a factory-based LLM client for provider-agnostic inference.",
+    benefits: [
+      { title: "Security", description: "API keys are handled via environment variables (POLYCRAWL_LLM_APIKEY), avoiding hardcoded secrets." },
+      { title: "Air-Gap Support", description: "Seamlessly switch to local Llama 3 via Ollama or vLLM endpoints for secure environments." },
+      { title: "Extensibility", description: "Easily add new providers like Google Gemini by implementing the LLMClient interface." },
+    ]
+  },
   stack: [
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
@@ -78,41 +129,124 @@ export const APP_CONTENT = {
   ],
   codeSnippets: [
     {
-      title: "CLI Entry Point",
+      title: "Unit Test: MCP Protocol",
       language: "go",
-      code: `package main
+      code: `func TestMCPProtocolCompliance(t *testing.T) {
+	// 1. Setup in/out pipes for full-duplex communication
+	serverIn, clientOut := io.Pipe()
+	clientIn, serverOut := io.Pipe()
 
-import (
-	"context"
-	"os"
+	// 2. Initialize the server
+	cfg := &mcp.Config{
+		Name:    "K8s-Tool-Server",
+		Version: "1.0.0",
+	}
+	server := mcp.NewServer(cfg, serverIn, serverOut)
+	
+	// Start server in a goroutine
+	go func() {
+		if err := server.Serve(); err != nil && err != io.EOF {
+			t.Errorf("Server exited with error: %v", err)
+		}
+	}()
 
-	"github.com/spf13/cobra"
-	"polycrawl-copilot/internal/config"
-	"polycrawl-copilot/internal/mcp"
-	"polycrawl-copilot/pkg/logger"
-)
+	// 3. Simulate JSON-RPC "list_tools" request
+	req := \`{"jsonrpc":"2.0","method":"list_tools","id":1}\` + "\n"
+	
+	go func() {
+		_, _ = clientOut.Write([]byte(req))
+	}()
 
-var rootCmd = &cobra.Command{
-	Use:   "polycrawl-copilot",
-	Short: "MCP Server for PolyCrawl Infrastructure",
-	Run: func(cmd *cobra.Command, args []string) {
-		cfg, _ := config.Load()
-		server := mcp.NewServer(cfg, os.Stdin, os.Stdout)
-		server.Serve(context.Background())
-	},
+	// 4. Read and Verify Response
+	resp := make([]byte, 2048)
+	n, err := clientIn.Read(resp)
+	if err != nil {
+		t.Fatalf("Failed to read response: %v", err)
+	}
+
+	responseBody := string(resp[:n])
+	
+	// Assertions
+	assert.Contains(t, responseBody, "get_k8s_context")
+	assert.Contains(t, responseBody, \`"id":1\`)
+	assert.Contains(t, responseBody, \`"result"\`)
 }`,
     },
     {
-      title: "K8s Tool Implementation",
+      title: "Performance Monitor",
       language: "go",
-      code: `func (i *Inspector) CheckCrawlerHealth(ctx context.Context, ns string) (string, error) {
-	pods, err := i.clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
-		LabelSelector: "app=crawler-worker",
-	})
-	if err != nil {
-		return "", err
+      code: `func (m *Monitor) TrackExecution(name string) func() {
+	start := time.Now()
+	return func() {
+		duration := time.Since(start)
+		m.logger.Debug("tool_execution",
+			zap.String("tool", name),
+			zap.Duration("latency", duration),
+		)
+		if duration > 200*time.Millisecond {
+			m.metrics.IncSlowExecution(name)
+		}
 	}
-	return fmt.Sprintf("Total Workers: %d", len(pods.Items)), nil
+}`,
+    },
+    {
+      title: "Tool: get_k8s_context",
+      language: "go",
+      code: `func (i *Inspector) GetK8sContext(ctx context.Context) (*ContextInfo, error) {
+	rawConfig, err := i.clientConfig.RawConfig()
+	if err != nil {
+		return nil, fmt.Errorf("missing kubeconfig: %w", err)
+	}
+
+	currCtx := rawConfig.CurrentContext
+	context, ok := rawConfig.Contexts[currCtx]
+	if !ok {
+		return nil, fmt.Errorf("invalid context: %s", currCtx)
+	}
+
+	cluster := rawConfig.Clusters[context.Cluster]
+	return &ContextInfo{
+		ContextName:    currCtx,
+		ClusterName:    context.Cluster,
+		ServerURL:      cluster.Server,
+		Namespace:      context.Namespace,
+		AuthMethod:     context.AuthInfo,
+	}, nil
+}`,
+    },
+    {
+      title: "LLM Factory Pattern",
+      language: "go",
+      code: `type LLMClient interface {
+	Completion(ctx context.Context, prompt string) (string, error)
+}
+
+func NewClient(cfg config.LLMConfig) (LLMClient, error) {
+	switch cfg.Provider {
+	case "openai":
+		return NewOpenAIClient(cfg.APIKey, cfg.Model), nil
+	case "local":
+		// Supports Llama 3 via local Ollama/vLLM
+		return NewLocalClient(cfg.Endpoint, cfg.Model), nil
+	default:
+		return nil, fmt.Errorf("unsupported: %s", cfg.Provider)
+	}
+}`,
+    },
+    {
+      title: "Configuration (Viper)",
+      language: "go",
+      code: `func Load() (*Settings, error) {
+	viper.SetConfigName("config")
+	viper.SetEnvPrefix("POLYCRAWL")
+	viper.AutomaticEnv() // e.g. POLYCRAWL_LLM_APIKEY
+	
+	var s Settings
+	if err := viper.ReadInConfig(); err != nil {
+		return nil, err
+	}
+	err := viper.Unmarshal(&s)
+	return &s, err
 }`,
     },
   ],
